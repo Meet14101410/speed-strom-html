@@ -1,0 +1,91 @@
+const game = document.getElementById("game");
+const car = document.getElementById("car");
+const scoreEl = document.getElementById("score");
+const gameOverEl = document.getElementById("gameOver");
+
+let lanes = [25, 125, 225]; // x positions of lanes
+let currentLane = 1;        // start in middle lane
+let obstacles = [];
+let score = 0;
+let gameOver = false;
+
+// Move car with keyboard
+document.addEventListener("keydown", (e) => {
+  if (gameOver && e.key.toLowerCase() === "r") {
+    restart();
+  }
+  if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+    if (currentLane > 0) currentLane--;
+  }
+  if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+    if (currentLane < 2) currentLane++;
+  }
+  car.style.left = lanes[currentLane] + "px";
+});
+
+// Spawn a new obstacle
+function spawnObstacle() {
+  if (gameOver) return;
+  let lane = Math.floor(Math.random() * 3);
+  let obs = document.createElement("div");
+  obs.classList.add("obstacle");
+  obs.style.left = lanes[lane] + "px";
+  obs.style.top = "-100px";
+  game.appendChild(obs);
+  obstacles.push(obs);
+}
+
+// Game loop
+function updateGame() {
+  if (gameOver) return;
+  score++;
+  scoreEl.textContent = "Score: " + score;
+
+  obstacles.forEach((obs, i) => {
+    let top = parseInt(obs.style.top);
+    obs.style.top = top + 5 + "px";
+
+    // Collision detection
+    let carRect = car.getBoundingClientRect();
+    let obsRect = obs.getBoundingClientRect();
+    if (
+      carRect.x < obsRect.x + obsRect.width &&
+      carRect.x + carRect.width > obsRect.x &&
+      carRect.y < obsRect.y + obsRect.height &&
+      carRect.height + carRect.y > obsRect.y
+    ) {
+      endGame();
+    }
+
+    // Remove obstacle when off-screen
+    if (top > 600) {
+      obs.remove();
+      obstacles.splice(i, 1);
+    }
+  });
+
+  requestAnimationFrame(updateGame);
+}
+
+// End the game
+function endGame() {
+  gameOver = true;
+  gameOverEl.style.display = "block";
+}
+
+// Restart the game
+function restart() {
+  gameOver = false;
+  score = 0;
+  scoreEl.textContent = "Score: 0";
+  obstacles.forEach(o => o.remove());
+  obstacles = [];
+  gameOverEl.style.display = "none";
+  currentLane = 1;
+  car.style.left = lanes[currentLane] + "px";
+  updateGame();
+}
+
+// Start the game
+setInterval(spawnObstacle, 1500);
+updateGame();
